@@ -1,14 +1,15 @@
 #!/bin/bash
 
-usage="m3u-gather.sh [-p m3u-playlist] [-o output-path]"
+usage="m3u-gather.sh [-d mp3-directory] [-p m3u-playlist] [-o output-path]"
 
 # script to gather all MP3s in an M3U playlist
 
 OUTPATH="$(pwd)"
 
-while getopts "p:o:" options
+while getopts "d:p:o:" options
 do
 	case $options in
+		d ) MP3PATH="$OPTARG";;
 		p ) M3UPATH="$OPTARG";;
 		o ) OUTPATH="$OPTARG";;
 		\? ) echo $usage
@@ -21,6 +22,15 @@ done
 # set Input Field Separator to newline
 IFS="$(echo -en "\n\r")"
 
+# find MP3 collection base directory
+if [ -z "$MP3PATH" ] && [ -z "$MUSIC_DIR" ]; then
+	echo "You must define a MUSIC_DIR env var, or supply the -d parameter"
+	exit 1
+elif [ ! -z "$MUSIC_DIR" ]; then
+	MP3PATH=$MUSIC_DIR
+fi
+
+# use current directory if no M3U supplied
 PWD=$(pwd)
 if [ -z "$M3UPATH" ]; then
 	M3UPATH=$PWD
@@ -53,9 +63,9 @@ fi
 # copy all MP3s from playlist into output dir
 for FILENAME in $(cat "$M3UPATH")
 do
-	if [ -f "$FILENAME" ]; then
+	if [ -f "$MP3PATH/$FILENAME" ]; then
 		echo "Gathering $(basename "$FILENAME").."
-		cp "$FILENAME" "$OUTPATH"
+		cp "$MP3PATH/$FILENAME" "$OUTPATH"
 	fi
 done
 

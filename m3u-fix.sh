@@ -1,12 +1,13 @@
 #!/bin/bash
 
-usage="m3u-fix.sh [-p m3u-playlist]"
+usage="m3u-fix.sh [-d mp3-directory] [-p m3u-playlist]"
 
 # script to find awol mp3s in an m3u
 
-while getopts "p:" options
+while getopts "d:p:" options
 do
 	case $options in
+		d ) MP3PATH="$OPTARG";;
 		p ) M3UPATH="$OPTARG";;
 		\? ) echo $usage
 			 exit 1;;
@@ -19,9 +20,18 @@ shift $((OPTIND-1))
 # set Input Field Separator to newline
 IFS="$(echo -en '\n\r')"
 
+# search for an m3u in the current directory if one isn't supplied
 PWD=$(pwd)
 if [ -z "$M3UPATH" ]; then
 	M3UPATH=$PWD
+fi
+
+# find MP3 collection base directory
+if [ -z "$MP3PATH" ] && [ -z "$MUSIC_DIR" ]; then
+	echo "You must define a MUSIC_DIR env var, or supply the -d parameter"
+	exit 1
+elif [ ! -z "$MUSIC_DIR" ]; then
+	MP3PATH=$MUSIC_DIR
 fi
 
 # attempt to find an M3U
@@ -49,7 +59,7 @@ do
 
 		# attempt to find missing file
 		IFS=""
-		FOUND=$(find "/media/sam/data/MP3/MP3/" -iname "$SEARCH" -type f)
+		FOUND=$(find "$MP3PATH" -iname "$SEARCH" -type f)
 
 		# print list of choices
 		if [ ! -z "$FOUND" ]; then
