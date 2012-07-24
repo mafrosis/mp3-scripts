@@ -15,7 +15,7 @@ elif [ -d "$1" ]; then
 	IFS="$(echo -en "\n\r")"
 	for FILENAME in $(find "$1" -iname "*.mp3")
 	do
-		eyeD3 --set-user-text-frame="Ripping Tool":"EAC" "$FILENAME"
+		eyeD3 --set-user-text-frame="Ripping Tool:EAC" "$FILENAME"
 	done
 fi
 
