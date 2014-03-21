@@ -30,6 +30,8 @@ elif [ ! -z "$MUSIC_DIR" ]; then
 	MP3PATH=$MUSIC_DIR
 fi
 
+echo "Will copy MP3s from $MP3PATH"
+
 # use current directory if no M3U supplied
 PWD=$(pwd)
 if [ -z "$M3UPATH" ]; then
@@ -38,6 +40,8 @@ fi
 
 # attempt to find an M3U
 if [ -d "$M3UPATH" ]; then
+	echo "Searching for m3u in $M3UPATH"
+
 	for FILENAME in $(find "$M3UPATH" -maxdepth 1 -iname "*.m3u" | sort -n)
 	do
 		echo "Use $FILENAME? [y/N]"
@@ -55,6 +59,8 @@ if [ ! -f "$M3UPATH" ]; then
 	exit
 fi
 
+echo "Using $M3UPATH"
+
 # create output directory if required
 if [ "$PWD" != "$OUTPATH" ] && [ ! -d "$OUTPATH" ]; then
 	mkdir "$OUTPATH"
@@ -66,6 +72,8 @@ do
 	if [ -f "$MP3PATH/$FILENAME" ]; then
 		echo "Gathering $(basename "$FILENAME").."
 		cp "$MP3PATH/$FILENAME" "$OUTPATH"
+	else
+		echo "MISSING: $(basename $FILENAME)"
 	fi
 done
 

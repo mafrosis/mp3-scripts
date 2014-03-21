@@ -6,7 +6,7 @@ USAGE="id3-setgenre.sh genre path"
 
 if [ $# -ne 2 ]; then
 	echo $USAGE
-	exit
+	exit 1
 fi
 
 GENRE_LIST=$(eyeD3 --list-genres)
@@ -15,7 +15,7 @@ GENRE_LIST=$(eyeD3 --list-genres)
 GENRE_EXISTS=$(echo $GENRE_LIST | grep " $1 ")
 if [ -z "$GENRE_EXISTS" ]; then
 	echo "Invalid genre"
-	exit
+	exit 2
 fi
 
 if [ -f "$2" ]; then
@@ -27,4 +27,3 @@ elif [ -d "$2" ]; then
 		eyeD3 --genre="$1" "$FILENAME"
 	done
 fi
-

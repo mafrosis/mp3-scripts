@@ -50,10 +50,12 @@ fi
 # check all playlist files exist
 for MP3 in $(cat "$M3UPATH" | awk '!/#/ {print}')
 do
+	FILE=$(basename "$MP3")
+
 	if [ ! -f "$MP3" ]; then
+		echo "$FILE missing"
+
 		# create a searchable string from the MP3 filename
-		FILE=$(basename "$MP3")
-		echo "$FILE not found"
 		SEARCH=$(echo "$FILE" | sed 's/[ -]/*/g' | sed 's/\.mp3/*mp3/g')
 		i=1
 
@@ -73,8 +75,9 @@ do
 			done
 			
 			read n
+			echo $n
 			if [ ! -z "$n" ]; then
-				# santize paths for sed (fwd-slash, space)
+				# sanitize paths for sed (fwd-slash, space)
 				MP3=$(echo "$MP3" | sed 's/\//\\\//g' | sed 's/ /\\ /g')
 				RES=$(echo "$RES" | sed 's/\//\\\//g' | sed 's/ /\\ /g')
 
@@ -84,6 +87,8 @@ do
 		else
 			echo "No possible options found"
 		fi
+	else
+		echo "$FILE ok"
 	fi
 done
 
