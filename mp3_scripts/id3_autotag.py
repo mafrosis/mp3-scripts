@@ -19,10 +19,15 @@ def main(directory=None, compilation=False, force=True, eac=False, skip_tests=Fa
     if directory is None:
         directory = os.getcwd()
 
+    # verify directory name structure
     directory_name = os.path.basename(directory)
     parts = directory_name.split(' - ')
     if len(parts) != 3:
-        raise AppException('Badly formed directory name')
+        # check directory contains mp3s..
+        if len(fnmatch.filter(os.listdir(directory), '*.mp3')) == 0:
+            raise AppException("No MP3s found in '{}'".format(directory_name))
+        else:
+            raise AppException("Badly formed directory name '{}'".format(directory_name))
 
     artist = parts[0]
     year = parts[1]
@@ -106,6 +111,7 @@ def main(directory=None, compilation=False, force=True, eac=False, skip_tests=Fa
 
         if quiet is False:
             from eyed3.plugins.classic import ClassicPlugin
+            import pdb;pdb.set_trace()
             classic.printTag(audiofile.tag)
 
         # run eyeD3 test suite
@@ -123,6 +129,9 @@ def cli():
     parent_parser.add_argument(
         '--quiet', '-q', action='store_true',
         help='Display no output')
+    parent_parser.add_argument(
+        '--debug', action='store_true',
+        help='Display debug output')
 
     # setup parser for backup command
     ptag = subparsers.add_parser('auto',
