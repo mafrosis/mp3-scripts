@@ -1,7 +1,9 @@
 import argparse
+import copy
 import datetime
 import fnmatch
 import os
+import sys
 
 import eyed3
 from eyed3 import core, id3
@@ -13,7 +15,7 @@ from eyed3.utils.console import printMsg, printError, printWarning, boldText
 eyed3.require((0, 7))
 
 class AutotagPlugin(LoaderPlugin):
-    SUMMARY = u'Autotag files based on their filename and the parent directory name'
+    SUMMARY = u'Automagically tag MP3s based on their filename and the parent folder name'
     DESCRIPTION = u"""
 Description here
 """
@@ -42,6 +44,12 @@ Description here
         g.add_argument('-v', '--verbose', action='store_true',
                        help=ARGS_HELP['--verbose'])
 
+        # instantiate classic plugin with copy of args, so they don't clash
+        # with ours, and resolve any conflicts that occur in argparse
+        cloned_args = copy.copy(self.arg_group)
+        cloned_args.conflict_handler = 'resolve'
+        self.classic = load('classic')(cloned_args)
+
 
     def handleFile(self, f):
         super(AutotagPlugin, self).handleFile(f)
@@ -50,20 +58,30 @@ Description here
             printError('Autotag operates on only a single album at a time')
             return
 
-        # extract album metadata from directory name
+        # set album metadata once
         if self.meta is None:
+            # ensure args is set in classic plugin
+            self.classic.args = self.args
+
+            # handle current directoty notation
             if self.args.paths[0] == '.':
                 path = os.getcwd()
             else:
                 path = self.args.paths[0]
 
-            self.parseDirectoryName(path)
+            try:
+                # extract album metadata from directory name
+                self.parseDirectoryName(path)
+            except AppException as e:
+                printError(str(e))
+                sys.exit(1)
 
         if not self.audio_file:
             if os.path.basename(f) != 'folder.jpg':
                 printWarning('Unknown type: {}'.format(os.path.basename(f)))
         else:
             self.tagFile(os.path.basename(f))
+
 
     def tagFile(self, filename):
         parts = os.path.splitext(filename)[0].split(' - ')
@@ -77,14 +95,12 @@ Description here
         # if GENRE:
             # validate GENRE
 
-        # load the file into eyed3
-        #audiofile = core.load(os.path.join(directory, filename))
-
         # force removal of existing tag
         if self.args.force is True and self.audio_file.tag is not None:
             id3.Tag.remove(self.audio_file.path, id3.ID3_ANY_VERSION)
             printMsg("Tag removed from '{}'".format(filename))
 
+        # initialize 
         if self.audio_file.tag is None:
             self.audio_file.initTag(id3.ID3_V2_4)
 
@@ -110,27 +126,17 @@ Description here
             )
 
         # save the tag
-        #self.audio_file.tag.save(
-        #    version=id3.ID3_V2_4,
-        #    encoding='utf8',
-        #    preserve_file_time=True,
-        #)
-
-        classic = load('classic')
-        import pdb;pdb.set_trace()
-
-        fakeArgs = argparse.Namespace(
-            quiet=self.args.quiet,
-            verbose=self.args.verbose,
-            write_images_dir=False,
-            write_objects_dir=False,
+        self.audio_file.tag.save(
+            version=id3.ID3_V2_4,
+            encoding='utf8',
+            preserve_file_time=True,
         )
-        ClassicPlugin.printAudioInfo(fakeArgs, self.audio_file.info)
-        ClassicPlugin.printTag(fakeArgs, self.audio_file.info)
 
-        #import pdb;pdb.set_trace()
-        #classic.printTag(audiofile.tag)
-        print self.audio_file.info
+        # print output from the classic plugin
+        self.classic.printHeader(self.audio_file.path)
+        printMsg("-" * 79)
+        self.classic.printAudioInfo(self.audio_file.info)
+        self.classic.printTag(self.audio_file.tag)
 
 
     def parseDirectoryName(self, path):
@@ -140,9 +146,9 @@ Description here
         if len(parts) != 3:
             # check directory contains mp3s..
             if len(fnmatch.filter(os.listdir(path), '*.mp3')) == 0:
-                printError("No MP3s found in '{}'".format(directory_name))
+                raise AppException("No MP3s found in '{}'".format(directory_name))
             else:
-                printError("Badly formed directory name '{}'".format(directory_name))
+                raise AppException("Badly formed directory name '{}'".format(directory_name))
 
         self.meta = {}
         self.meta['artist'] = parts[0]
@@ -183,3 +189,7 @@ ARGS_HELP = {
     '--skip-tests': 'Skip eyeD3 test suite.',
     '--verbose': 'Show all available tag data',
 }
+
+
+class AppException(Exception):
+    pass
