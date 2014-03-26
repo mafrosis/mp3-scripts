@@ -16,4 +16,5 @@ for FILENAME in $(find "$(pwd)/plugins" -name "*.py"); do
 		rm "$PLUGIN_DIR/$NAME"
 	fi
 	ln -s "$FILENAME" $PLUGIN_DIR
+	echo "Symlinked plugin $NAME"
 done
